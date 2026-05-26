@@ -63,14 +63,17 @@ def health_check():
 
 @app.get("/health/db")
 def health_check_db():
+    import traceback
+    url_raw = os.environ.get("DATABASE_URL", "NOT_SET")
+    url_safe = url_raw[:30] + "..." if len(url_raw) > 30 else url_raw
     try:
         from app.core.database import engine
         from sqlalchemy import text
         with engine.connect() as conn:
-            conn.execute(text("SELECT 1"))
-        return {"status": "ok", "db": "connected"}
+            r = conn.execute(text("SELECT 1"))
+            return {"status": "ok", "db": "connected", "url_prefix": url_safe}
     except Exception as e:
-        return {"status": "error", "db": str(e), "url_prefix": os.environ.get("DATABASE_URL", "NOT_SET")[:50]}
+        return {"status": "error", "error": str(e)[:300], "trace": traceback.format_exc()[-500:], "url_prefix": url_safe}
 
 
 # AWS Lambda 핸들러

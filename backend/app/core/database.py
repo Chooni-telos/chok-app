@@ -5,13 +5,14 @@ from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 
 from app.core.config import settings
 
+_db_url = settings.effective_database_url
 _engine_kwargs: dict = {"pool_pre_ping": True}
-if settings.DATABASE_URL.startswith("sqlite"):
+if _db_url.startswith("sqlite"):
     _engine_kwargs["connect_args"] = {"check_same_thread": False}
 else:
-    _engine_kwargs["connect_args"] = {"connect_timeout": 10, "options": "-c statement_timeout=30000"}
+    _engine_kwargs["connect_args"] = {"connect_timeout": 10}
 
-engine = create_engine(settings.DATABASE_URL, **_engine_kwargs)
+engine = create_engine(_db_url, **_engine_kwargs)
 SessionLocal = sessionmaker(bind=engine, autocommit=False, autoflush=False)
 
 

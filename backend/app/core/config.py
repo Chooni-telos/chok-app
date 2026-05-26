@@ -3,6 +3,19 @@ from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
     DATABASE_URL: str = "postgresql://jakdoo:jakdoo@localhost:5432/jakdoo"
+    DB_HOST: str = ""
+    DB_PORT: int = 5432
+    DB_USER: str = ""
+    DB_PASSWORD: str = ""
+    DB_NAME: str = "postgres"
+
+    @property
+    def effective_database_url(self) -> str:
+        if self.DB_HOST:
+            from urllib.parse import quote_plus
+            pw = quote_plus(self.DB_PASSWORD)
+            return f"postgresql://{self.DB_USER}:{pw}@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"
+        return self.DATABASE_URL
 
     JWT_SECRET_KEY: str = "change-me-to-a-random-secret"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30

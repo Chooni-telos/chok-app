@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException
@@ -10,7 +11,7 @@ from app.core.errors import AppError, app_error_handler
 app = FastAPI(title="CHOK API", version="0.1.0")
 
 _ADMIN_HTML = Path(__file__).resolve().parent / "static" / "admin.html"
-_CARDS_DIR = (Path(__file__).resolve().parent.parent.parent / "frontend" / "public" / "cards")
+_CARDS_DIR = Path("/tmp/cards") if os.environ.get("AWS_LAMBDA_FUNCTION_NAME") else (Path(__file__).resolve().parent.parent.parent / "frontend" / "public" / "cards")
 _CARDS_DIR.mkdir(parents=True, exist_ok=True)
 
 app.add_middleware(

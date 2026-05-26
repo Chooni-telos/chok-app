@@ -58,3 +58,11 @@ def serve_static(filename: str):
 @app.get("/health")
 def health_check():
     return {"status": "ok"}
+
+
+# AWS Lambda 핸들러
+try:
+    from mangum import Mangum
+    handler = Mangum(app)
+except ImportError:
+    pass

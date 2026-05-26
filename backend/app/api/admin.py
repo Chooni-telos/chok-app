@@ -20,11 +20,31 @@ from app.services.settlement import settle_card
 
 router = APIRouter(prefix="/api/v1/admin", tags=["admin"])
 
-UPLOAD_DIR = Path(__file__).resolve().parent.parent.parent.parent / "frontend" / "public" / "cards"
 ALLOWED_EXTENSIONS = {".jpg", ".jpeg", ".png", ".gif", ".webp"}
 MAX_FILE_SIZE = 5 * 1024 * 1024
 
 VALID_CATEGORIES = ["시사", "스포츠", "엔터테인먼트", "경제테크", "도파민"]
+
+
+def _upload_to_s3(data: bytes, filename: str, content_type: str) -> str:
+    import boto3
+    from app.core.config import settings
+    s3 = boto3.client("s3", region_name=settings.S3_REGION)
+    key = f"cards/{filename}"
+    s3.put_object(
+        Bucket=settings.S3_BUCKET,
+        Key=key,
+        Body=data,
+        ContentType=content_type,
+    )
+    return f"https://{settings.S3_BUCKET}.s3.{settings.S3_REGION}.amazonaws.com/{key}"
+
+
+def _upload_local(data: bytes, filename: str) -> str:
+    upload_dir = Path(__file__).resolve().parent.parent.parent.parent / "frontend" / "public" / "cards"
+    upload_dir.mkdir(parents=True, exist_ok=True)
+    (upload_dir / filename).write_bytes(data)
+    return f"/cards/{filename}"
 
 
 @router.post("/upload", summary="이미지 업로드 (어드민 전용)")
@@ -32,6 +52,8 @@ async def admin_upload_image(
     file: UploadFile,
     _admin: User = Depends(get_admin_user),
 ):
+    from app.core.config import settings
+
     ext = Path(file.filename or "").suffix.lower()
     if ext not in ALLOWED_EXTENSIONS:
         raise AppError("VALIDATION_ERROR", f"허용 확장자: {', '.join(ALLOWED_EXTENSIONS)}", 422)
@@ -40,11 +62,15 @@ async def admin_upload_image(
     if len(data) > MAX_FILE_SIZE:
         raise AppError("VALIDATION_ERROR", "파일 크기는 5MB 이하여야 합니다.", 422)
 
-    UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
     filename = f"{uuid.uuid4()}{ext}"
-    (UPLOAD_DIR / filename).write_bytes(data)
+    content_type = file.content_type or "image/png"
 
-    return {"image_url": f"/cards/{filename}"}
+    if settings.S3_BUCKET:
+        image_url = _upload_to_s3(data, filename, content_type)
+    else:
+        image_url = _upload_local(data, filename)
+
+    return {"image_url": image_url}
 
 
 class AdminCardCreate(BaseModel):

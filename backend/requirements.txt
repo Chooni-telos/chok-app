@@ -11,3 +11,4 @@ httpx
 python-dotenv
 python-multipart
 mangum
+boto3

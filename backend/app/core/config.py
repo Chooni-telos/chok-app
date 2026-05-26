@@ -26,6 +26,8 @@ class Settings(BaseSettings):
     GOOGLE_CLIENT_ID: str = ""
     GOOGLE_CLIENT_SECRET: str = ""
 
+    S3_BUCKET: str = ""
+    S3_REGION: str = "us-east-1"
     APP_ENV: str = "local"
     DEFAULT_LANGUAGE: str = "ko"
     ALLOW_DEV_LOGIN: bool = True

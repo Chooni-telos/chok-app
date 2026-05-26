@@ -67,13 +67,19 @@ def health_check_db():
     url_raw = os.environ.get("DATABASE_URL", "NOT_SET")
     url_safe = url_raw[:30] + "..." if len(url_raw) > 30 else url_raw
     try:
-        from app.core.database import engine
-        from sqlalchemy import text
-        with engine.connect() as conn:
-            r = conn.execute(text("SELECT 1"))
-            return {"status": "ok", "db": "connected", "url_prefix": url_safe}
+        import psycopg2
+        from urllib.parse import urlparse
+        p = urlparse(url_raw)
+        conn = psycopg2.connect(
+            host=p.hostname, port=p.port or 5432,
+            user=p.username, password=p.password,
+            dbname=p.path.lstrip("/"),
+            connect_timeout=5,
+        )
+        conn.close()
+        return {"status": "ok", "db": "connected", "host": p.hostname, "user": p.username}
     except Exception as e:
-        return {"status": "error", "error": str(e)[:300], "trace": traceback.format_exc()[-500:], "url_prefix": url_safe}
+        return {"status": "error", "error": str(e)[:300], "url_prefix": url_safe, "trace": traceback.format_exc()[-300:]}
 
 
 # AWS Lambda 핸들러

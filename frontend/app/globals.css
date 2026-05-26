@@ -1,0 +1,152 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  background:
+    radial-gradient(1200px 700px at 80% -10%, rgba(155,120,255,.18), transparent 60%),
+    radial-gradient(900px 600px at -10% 110%, rgba(80,180,255,.12), transparent 60%),
+    #0b0a18;
+  color: #f3f0ff;
+  -webkit-font-smoothing: antialiased;
+}
+
+::-webkit-scrollbar {
+  display: none;
+}
+
+/* ── 촉 등급 컬렉션 (Tier visuals) ── */
+
+.tier-hero {
+  background:
+    radial-gradient(600px 400px at 50% 0%, rgba(155,120,255,.22), transparent 70%);
+}
+
+.tier-eyebrow::before {
+  content: "";
+  width: 24px;
+  height: 1px;
+  background: linear-gradient(90deg, #cbb8ff, transparent);
+}
+
+.tier-title {
+  background: linear-gradient(180deg, #fff 0%, #d6c8ff 60%, #8a7bc8 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.tier-card {
+  background: linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.015));
+}
+.tier-card::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  pointer-events: none;
+  background: radial-gradient(120% 60% at 50% 0%, var(--tier-accent-soft, transparent) 0%, transparent 60%);
+  opacity: .55;
+  z-index: -1;
+}
+
+.tier-god    { --tier-accent-soft: rgba(255,200,80,.25); }
+.tier-genius { --tier-accent-soft: rgba(170,110,255,.28); }
+.tier-sharp  { --tier-accent-soft: rgba(90,170,255,.25); }
+.tier-rookie { --tier-accent-soft: rgba(160,240,120,.26); }
+.tier-dull   { --tier-accent-soft: rgba(180,180,200,.18); }
+.tier-cursed { --tier-accent-soft: rgba(255,90,90,.24); }
+
+.tier-god .tier-ko-name    { color: #ffd56b; }
+.tier-genius .tier-ko-name { color: #c8a6ff; }
+.tier-sharp .tier-ko-name  { color: #a3cfff; }
+.tier-rookie .tier-ko-name { color: #c2f29a; }
+.tier-dull .tier-ko-name   { color: #dadbe8; }
+.tier-cursed .tier-ko-name { color: #ffb3b3; }
+
+.tier-badge-current {
+  background: #9bff7a;
+  color: #0b2010;
+  border: none;
+  animation: tier-pulse 2s infinite;
+}
+@keyframes tier-pulse {
+  0%,100% { box-shadow: 0 0 0 0 rgba(155,255,122,.5); }
+  50%     { box-shadow: 0 0 0 10px rgba(155,255,122,0); }
+}
+
+.tier-tag {
+  font-size: 11px;
+  padding: 4px 9px;
+  border-radius: 999px;
+  background: rgba(255,255,255,.05);
+  color: #e8e6f0;
+  border: 1px solid rgba(255,255,255,.08);
+}
+
+.tier-current {
+  border-color: rgba(255,255,255,.18);
+}
+
+/* Orb sizing & animations */
+.orb { width: 140px; height: 140px; display: block; }
+
+.orb-glow-god    { filter: drop-shadow(0 0 24px rgba(255,205,80,.55)) drop-shadow(0 0 60px rgba(255,180,60,.35)); }
+.orb-glow-genius { filter: drop-shadow(0 0 22px rgba(170,110,255,.6)) drop-shadow(0 0 55px rgba(140,80,255,.35)); }
+.orb-glow-sharp  { filter: drop-shadow(0 0 18px rgba(90,170,255,.55)) drop-shadow(0 0 50px rgba(60,140,255,.3)); }
+.orb-glow-rookie { filter: drop-shadow(0 0 18px rgba(160,240,120,.5)) drop-shadow(0 0 45px rgba(140,220,100,.3)); }
+.orb-glow-dull   { filter: drop-shadow(0 4px 12px rgba(0,0,0,.5)); }
+.orb-glow-cursed { filter: drop-shadow(0 0 18px rgba(255,90,90,.5)) drop-shadow(0 0 40px rgba(255,60,60,.3)); }
+
+.orb-float   { animation: orb-float 6s ease-in-out infinite; }
+.orb-float-2 { animation: orb-float 7.5s ease-in-out infinite reverse; }
+.orb-float-3 { animation: orb-float 8s ease-in-out infinite; }
+
+@keyframes orb-float {
+  0%,100% { transform: translateY(0); }
+  50%     { transform: translateY(-8px); }
+}
+
+.orb-rotate     { animation: orb-rot 30s linear infinite; transform-origin: center; }
+.orb-rotate-rev { animation: orb-rot 45s linear infinite reverse; transform-origin: center; }
+@keyframes orb-rot { to { transform: rotate(360deg); } }
+
+.orb-spark { animation: orb-spark 1.8s ease-in-out infinite; }
+@keyframes orb-spark {
+  0%,100% { opacity: .4; transform: scale(.95); }
+  50%     { opacity: 1; transform: scale(1.05); }
+}
+
+.orb-glitch { animation: orb-glitch 2.6s steps(1) infinite; }
+@keyframes orb-glitch {
+  0%,100% { transform: translate(0,0); }
+  20%     { transform: translate(-1.5px,1px); }
+  22%     { transform: translate(2px,-1px); }
+  40%     { transform: translate(0,0); }
+  60%     { transform: translate(1px,2px); }
+  62%     { transform: translate(-2px,-1px); }
+  80%     { transform: translate(0,0); }
+}
+
+/* Utility color for tiers page text */
+.text-tier-dim { color: #e8e6f0; }
+
+/* ── Zener card flip ── */
+.zener-card-flip { perspective: 800px; }
+.zener-card-inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transition: transform 0.6s cubic-bezier(.4,.0,.2,1);
+  transform-style: preserve-3d;
+}
+.zener-card-inner.flipped { transform: rotateY(180deg); }
+.zener-card-face {
+  position: absolute;
+  inset: 0;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  border-radius: 16px;
+}
+.zener-card-front { transform: rotateY(180deg); }
+.zener-card-back { transform: rotateY(0deg); }

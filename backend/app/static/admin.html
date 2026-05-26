@@ -1,0 +1,780 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>촉 관리자</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:'Segoe UI',sans-serif; background:#f1f5f9; color:#1e293b; min-height:100vh; }
+
+  /* 헤더 */
+  .header { background:#4f46e5; color:#fff; padding:16px 24px; display:flex; align-items:center; justify-content:space-between; }
+  .header h1 { font-size:20px; }
+  .header button { background:rgba(255,255,255,.2); border:none; color:#fff; padding:8px 16px; border-radius:8px; cursor:pointer; font-size:13px; }
+  .header button:hover { background:rgba(255,255,255,.3); }
+
+  /* 로그인 */
+  .login-wrap { display:flex; align-items:center; justify-content:center; min-height:100vh; }
+  .login-box { background:#fff; padding:40px; border-radius:16px; box-shadow:0 4px 24px rgba(0,0,0,.08); width:360px; text-align:center; }
+  .login-box h2 { font-size:24px; margin-bottom:8px; }
+  .login-box p { color:#64748b; font-size:14px; margin-bottom:24px; }
+  .login-box input { width:100%; padding:12px 16px; border:1px solid #e2e8f0; border-radius:8px; font-size:14px; margin-bottom:12px; }
+  .login-box .btn-login { width:100%; padding:12px; background:#4f46e5; color:#fff; border:none; border-radius:8px; font-size:15px; font-weight:600; cursor:pointer; }
+  .login-box .btn-login:hover { background:#4338ca; }
+  .login-box .error { color:#dc2626; font-size:13px; margin-top:8px; }
+
+  /* 대시보드 */
+  .container { max-width:1280px; margin:0 auto; padding:24px; }
+  .main-layout { display:flex; gap:24px; align-items:flex-start; }
+  .main-layout .panel-left { flex:1; min-width:0; }
+  .main-layout .panel-right { flex:1; min-width:0; }
+  @media (max-width:860px) { .main-layout { flex-direction:column-reverse; } }
+  .section-title { font-size:18px; font-weight:700; margin-bottom:16px; }
+
+  /* 카드 등록 폼 */
+  .form-card { background:#fff; border-radius:12px; padding:24px; box-shadow:0 2px 8px rgba(0,0,0,.06); margin-bottom:24px; }
+  .form-row { margin-bottom:16px; }
+  .form-row label { display:block; font-size:13px; font-weight:600; color:#64748b; margin-bottom:6px; }
+  .form-row input, .form-row select, .form-row textarea { width:100%; padding:10px 14px; border:1px solid #e2e8f0; border-radius:8px; font-size:14px; }
+  .form-row textarea { resize:vertical; min-height:60px; }
+  .form-actions { display:flex; gap:8px; justify-content:center; }
+  .btn-primary { padding:10px 24px; background:#4f46e5; color:#fff; border:none; border-radius:8px; font-size:14px; font-weight:600; cursor:pointer; }
+  .btn-primary:hover { background:#4338ca; }
+  .btn-primary:disabled { background:#94a3b8; cursor:not-allowed; }
+  .toast { position:fixed; top:20px; right:20px; padding:12px 20px; border-radius:8px; color:#fff; font-size:14px; z-index:999; animation:fadeIn .3s; }
+  .toast.success { background:#16a34a; }
+  .toast.error { background:#dc2626; }
+  @keyframes fadeIn { from{opacity:0;transform:translateY(-10px)} to{opacity:1;transform:translateY(0)} }
+
+  /* 카드 목록 */
+  .card-list { display:flex; flex-direction:column; gap:12px; }
+  .card-item { background:#fff; border-radius:12px; padding:16px; box-shadow:0 2px 8px rgba(0,0,0,.06); display:flex; align-items:center; gap:12px; overflow:hidden; }
+  @media (max-width:600px) { .card-item { flex-wrap:wrap; } .card-item .actions { width:100%; justify-content:flex-end; margin-top:4px; } }
+  .card-item .cat { font-size:11px; font-weight:600; padding:4px 10px; border-radius:20px; white-space:nowrap; }
+  .cat-시사 { background:#dbeafe; color:#2563eb; }
+  .cat-스포츠 { background:#dcfce7; color:#16a34a; }
+  .cat-엔터테인먼트 { background:#fce7f3; color:#db2777; }
+  .cat-경제테크 { background:#fef3c7; color:#d97706; }
+  .cat-도파민 { background:#f3e8ff; color:#7c3aed; }
+  .card-item .info { flex:1; min-width:0; }
+  .card-item .info .title { font-size:14px; font-weight:600; margin-bottom:4px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .card-item .info .meta { font-size:12px; color:#64748b; }
+  .card-item .actions button { background:none; border:1px solid #e2e8f0; padding:6px 12px; border-radius:6px; font-size:12px; cursor:pointer; color:#64748b; }
+  .card-item .actions button:hover { background:#fee2e2; color:#dc2626; border-color:#fca5a5; }
+  .empty { text-align:center; color:#94a3b8; padding:40px; font-size:14px; }
+
+  .hidden { display:none !important; }
+  .stats-bar { display:flex; gap:16px; margin-bottom:24px; }
+  .stat-box { flex:1; background:#fff; border-radius:12px; padding:16px; text-align:center; box-shadow:0 2px 8px rgba(0,0,0,.06); }
+  .stat-box .num { font-size:28px; font-weight:700; color:#4f46e5; }
+  .stat-box .label { font-size:12px; color:#64748b; margin-top:4px; }
+
+  /* 이미지 업로드 */
+  .upload-area { border:2px dashed #e2e8f0; border-radius:8px; padding:24px; text-align:center; cursor:pointer; transition:border-color .2s; }
+  .upload-area:hover { border-color:#4f46e5; }
+  .upload-placeholder { display:flex; flex-direction:column; align-items:center; gap:8px; color:#94a3b8; font-size:14px; }
+  .upload-icon { font-size:32px; }
+  .upload-preview { position:relative; display:inline-block; }
+  .upload-preview img { max-height:160px; max-width:100%; border-radius:8px; }
+  .upload-remove { position:absolute; top:-8px; right:-8px; width:24px; height:24px; border-radius:50%; background:#dc2626; color:#fff; border:none; font-size:14px; cursor:pointer; line-height:24px; padding:0; }
+  .btn-cancel { padding:10px 24px; background:#fff; color:#64748b; border:1px solid #e2e8f0; border-radius:8px; font-size:14px; font-weight:600; cursor:pointer; }
+  .btn-cancel:hover { background:#f1f5f9; }
+  .card-item .actions { display:flex; gap:6px; }
+  .card-item .actions .btn-edit { background:none; border:1px solid #e2e8f0; padding:6px 12px; border-radius:6px; font-size:12px; cursor:pointer; color:#4f46e5; }
+  .card-item .actions .btn-edit:hover { background:#eef2ff; border-color:#a5b4fc; }
+  .card-item .thumb { width:48px; height:48px; border-radius:6px; object-fit:cover; flex-shrink:0; }
+</style>
+</head>
+<body>
+
+<!-- 로그인 화면 -->
+<div id="loginPage" class="login-wrap">
+  <div class="login-box">
+    <h2><img src="/static/icon.png" alt="촉" style="height:48px;border-radius:8px;vertical-align:middle;margin-right:8px"> 촉 관리자</h2>
+    <p>어드민 계정으로 로그인하세요</p>
+    <input type="text" id="loginId" placeholder="관리자 ID" value="admin">
+    <button class="btn-login" onclick="doLogin()">로그인</button>
+    <div id="loginError" class="error hidden"></div>
+  </div>
+</div>
+
+<!-- 관리 화면 -->
+<div id="dashPage" class="hidden">
+  <div class="header">
+    <h1><img src="/static/icon.png" alt="촉" style="height:44px;border-radius:6px;vertical-align:middle;margin-right:8px"> 촉 관리자</h1>
+    <button onclick="doLogout()">로그아웃</button>
+  </div>
+
+  <div class="container">
+    <div class="main-layout">
+    <!-- 왼쪽: 카드 목록 -->
+    <div class="panel-left">
+      <!-- 통계 -->
+      <div class="stats-bar">
+        <div class="stat-box"><div class="num" id="statOpen">-</div><div class="label">진행 중</div></div>
+        <div class="stat-box"><div class="num" id="statClosed">-</div><div class="label">마감</div></div>
+        <div class="stat-box"><div class="num" id="statSettled">-</div><div class="label">정산 완료</div></div>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+        <div class="section-title" style="margin-bottom:0">등록된 카드</div>
+        <button class="btn-primary" style="font-size:13px;padding:8px 16px" onclick="document.querySelector('.form-card').scrollIntoView({behavior:'smooth'});cancelEdit();">+ 신규등록</button>
+      </div>
+      <div style="display:flex;gap:8px;margin-bottom:16px">
+        <input type="text" id="searchTitle" placeholder="제목 검색" oninput="filterCards()" style="flex:1;padding:8px 12px;border:1px solid #e2e8f0;border-radius:8px;font-size:13px">
+        <select id="searchStatus" onchange="filterCards()" style="padding:8px 12px;border:1px solid #e2e8f0;border-radius:8px;font-size:13px">
+          <option value="all">전체</option>
+          <option value="open" selected>진행 중</option>
+          <option value="closed">마감</option>
+          <option value="settled">정산 완료</option>
+        </select>
+      </div>
+      <div id="cardList" class="card-list"></div>
+      <div id="pagination" style="display:flex;justify-content:center;align-items:center;gap:8px;margin-top:16px"></div>
+    </div>
+
+    <!-- 오른쪽: 카드 등록 폼 -->
+    <div class="panel-right">
+    <div class="form-card">
+      <div class="section-title" id="formTitle">새 예측 카드 등록</div>
+      <div class="form-row">
+        <label>예측 질문 *</label>
+        <input type="text" id="fTitle" placeholder="예: 이번 주 비트코인 1억 돌파할까?" maxlength="200">
+      </div>
+      <div class="form-row">
+        <label>카테고리 *</label>
+        <select id="fCategory">
+          <option value="시사">시사</option>
+          <option value="스포츠">스포츠</option>
+          <option value="엔터테인먼트">엔터테인먼트</option>
+          <option value="경제테크">경제테크</option>
+          <option value="도파민">도파민</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <label>카드 유형 *</label>
+        <select id="fCardType" onchange="toggleChoicesUI()">
+          <option value="yesno">YES / NO</option>
+          <option value="multichoice">객관식 (커스텀 선택지)</option>
+        </select>
+      </div>
+      <div class="form-row hidden" id="choicesRow">
+        <label>선택지 (최소 2개)</label>
+        <div id="choicesList"></div>
+        <button type="button" class="btn-cancel" style="margin-top:8px;font-size:12px;padding:6px 14px" onclick="addChoiceInput()">+ 선택지 추가</button>
+      </div>
+      <div class="form-row">
+        <label>상세 설명 (선택)</label>
+        <textarea id="fDesc" placeholder="카드에 대한 추가 설명"></textarea>
+      </div>
+      <div class="form-row" style="display:flex;gap:12px;flex-wrap:wrap">
+        <div style="flex:1;min-width:130px">
+          <label>시작일자 *</label>
+          <input type="date" id="fStartAt">
+        </div>
+        <div style="flex:1;min-width:130px">
+          <label>투표 마감일 *</label>
+          <input type="date" id="fClosesAt">
+        </div>
+        <div style="flex:1;min-width:130px">
+          <label>결과 발표일</label>
+          <input type="date" id="fResultAt">
+        </div>
+      </div>
+      <div class="form-row">
+        <label>대상 연령대 (복수 선택 가능)</label>
+        <div id="fAgeGroups" style="display:flex;gap:8px 16px;flex-wrap:wrap">
+          <label style="display:flex;align-items:center;gap:6px;font-size:15px;cursor:pointer;white-space:nowrap"><input type="checkbox" value="all" class="age-chk-all" style="width:18px;height:18px" onchange="toggleAllAges(this)"> 모든 세대</label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:15px;cursor:pointer;white-space:nowrap"><input type="checkbox" value="10대" class="age-chk" style="width:18px;height:18px"> 10대</label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:15px;cursor:pointer;white-space:nowrap"><input type="checkbox" value="20대" class="age-chk" style="width:18px;height:18px"> 20대</label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:15px;cursor:pointer;white-space:nowrap"><input type="checkbox" value="30대" class="age-chk" style="width:18px;height:18px"> 30대</label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:15px;cursor:pointer;white-space:nowrap"><input type="checkbox" value="40대" class="age-chk" style="width:18px;height:18px"> 40대</label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:15px;cursor:pointer;white-space:nowrap"><input type="checkbox" value="50대" class="age-chk" style="width:18px;height:18px"> 50대</label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:15px;cursor:pointer;white-space:nowrap"><input type="checkbox" value="60대 이상" class="age-chk" style="width:18px;height:18px"> 60대 이상</label>
+        </div>
+      </div>
+      <div class="form-row">
+        <label>카드 이미지 (선택, 5MB 이하)</label>
+        <div class="upload-area" id="uploadArea" onclick="document.getElementById('fImage').click()">
+          <input type="file" id="fImage" accept="image/*" style="display:none" onchange="onFileSelect(event)">
+          <div id="uploadPlaceholder" class="upload-placeholder">
+            <span class="upload-icon">🖼️</span>
+            <span>클릭하여 이미지 선택</span>
+          </div>
+          <div id="uploadPreview" class="upload-preview hidden">
+            <img id="previewImg" src="" alt="미리보기">
+            <button type="button" class="upload-remove" onclick="removeImage(event)">✕</button>
+          </div>
+        </div>
+        <input type="hidden" id="fImageUrl" value="">
+      </div>
+      <div class="form-actions">
+        <button class="btn-primary" id="btnCreate" onclick="submitCard()">카드 등록</button>
+        <button class="btn-cancel hidden" id="btnCancel" onclick="cancelEdit()">취소</button>
+      </div>
+    </div>
+    </div> <!-- panel-right -->
+    </div> <!-- main-layout -->
+  </div>
+</div>
+
+<script>
+const API = '';
+let token = localStorage.getItem('admin_token');
+
+if (token) { showDash(); }
+
+async function doLogin() {
+  const id = document.getElementById('loginId').value.trim();
+  const errEl = document.getElementById('loginError');
+  errEl.classList.add('hidden');
+
+  try {
+    const res = await fetch(API + '/api/v1/auth/login', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({provider:'dev', code: id})
+    });
+    if (!res.ok) throw new Error('로그인 실패');
+    const data = await res.json();
+    token = data.access_token;
+
+    // 어드민 권한 확인
+    const check = await fetch(API + '/api/v1/admin/cards?status=open', {
+      headers: {'Authorization': 'Bearer ' + token}
+    });
+    if (check.status === 403) {
+      throw new Error('어드민 권한이 없는 계정입니다');
+    }
+    if (!check.ok) throw new Error('권한 확인 실패');
+
+    localStorage.setItem('admin_token', token);
+    showDash();
+  } catch(e) {
+    errEl.textContent = e.message;
+    errEl.classList.remove('hidden');
+  }
+}
+
+function doLogout() {
+  token = null;
+  localStorage.removeItem('admin_token');
+  document.getElementById('dashPage').classList.add('hidden');
+  document.getElementById('loginPage').classList.remove('hidden');
+}
+
+function toLocalInput(d) {
+  const pad = n => String(n).padStart(2,'0');
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+function toDateInput(d) {
+  const pad = n => String(n).padStart(2,'0');
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+}
+
+function setDefaultDates() {
+  const now = new Date();
+  const tomorrow = new Date(now.getTime() + 24*60*60*1000);
+  document.getElementById('fStartAt').value = toDateInput(now);
+  document.getElementById('fClosesAt').value = toDateInput(tomorrow);
+}
+
+function handleUnauthorized() {
+  token = null;
+  localStorage.removeItem('admin_token');
+  document.getElementById('dashPage').classList.add('hidden');
+  document.getElementById('loginPage').classList.remove('hidden');
+  toast('세션이 만료되었습니다. 다시 로그인해주세요.', 'error');
+}
+
+async function authFetch(url, opts = {}) {
+  opts.headers = { ...opts.headers, 'Authorization': 'Bearer ' + token };
+  const res = await fetch(url, opts);
+  if (res.status === 401) { handleUnauthorized(); throw new Error('세션 만료'); }
+  return res;
+}
+
+async function showDash() {
+  document.getElementById('loginPage').classList.add('hidden');
+  document.getElementById('dashPage').classList.remove('hidden');
+  setDefaultDates();
+  await Promise.all([loadStats(), loadCards()]);
+}
+
+async function loadStats() {
+  try {
+    const [o, c, s] = await Promise.all([
+      authFetch(API+'/api/v1/admin/cards?status=open').then(r=>r.json()),
+      authFetch(API+'/api/v1/admin/cards?status=closed').then(r=>r.json()),
+      authFetch(API+'/api/v1/admin/cards?status=settled').then(r=>r.json()),
+    ]);
+    document.getElementById('statOpen').textContent = o.length;
+    document.getElementById('statClosed').textContent = c.length;
+    document.getElementById('statSettled').textContent = s.length;
+  } catch(e) {
+    console.error(e);
+  }
+}
+
+let allCards = [];
+let currentPage = 1;
+const PAGE_SIZE = 8;
+
+async function loadCards() {
+  try {
+    const [o, c, s] = await Promise.all([
+      authFetch(API+'/api/v1/admin/cards?status=open').then(r=>r.ok?r.json():[]),
+      authFetch(API+'/api/v1/admin/cards?status=closed').then(r=>r.ok?r.json():[]),
+      authFetch(API+'/api/v1/admin/cards?status=settled').then(r=>r.ok?r.json():[]),
+    ]);
+    allCards = [...o, ...c, ...s];
+    currentPage = 1;
+    filterCards();
+  } catch(e) {
+    document.getElementById('cardList').innerHTML = '<div class="empty">목록을 불러올 수 없습니다</div>';
+  }
+}
+
+function filterCards() {
+  const query = document.getElementById('searchTitle').value.trim().toLowerCase();
+  const status = document.getElementById('searchStatus').value;
+  let filtered = allCards;
+  if (status !== 'all') filtered = filtered.filter(c => c.status === status);
+  if (query) filtered = filtered.filter(c => c.title.toLowerCase().includes(query));
+  currentPage = 1;
+  renderCards(filtered);
+}
+
+function renderCards(cards) {
+  const el = document.getElementById('cardList');
+  const pgEl = document.getElementById('pagination');
+  const totalPages = Math.max(1, Math.ceil(cards.length / PAGE_SIZE));
+  if (currentPage > totalPages) currentPage = totalPages;
+  const start = (currentPage - 1) * PAGE_SIZE;
+  const page = cards.slice(start, start + PAGE_SIZE);
+
+  if (cards.length === 0) {
+    el.innerHTML = '<div class="empty">검색 결과가 없습니다</div>';
+    pgEl.innerHTML = '';
+    return;
+  }
+
+  el.innerHTML = page.map(c => {
+    const fmt = dt => { if(!dt) return '-'; const d=new Date(dt); return d.toLocaleDateString('ko')+' '+d.toLocaleTimeString('ko',{hour:'2-digit',minute:'2-digit'}); };
+    const votes = c.yes_count + c.no_count;
+    const thumb = c.image_url ? `<img class="thumb" src="${esc(c.image_url)}" alt="">` : '';
+    const typeLabel = c.card_type === 'multichoice' ? '객관식' : 'YES/NO';
+    const statusLabel = c.status === 'open' ? '진행중' : c.status === 'closed' ? '마감' : '정산완료';
+    const statusColor = c.status === 'open' ? '#16a34a' : c.status === 'closed' ? '#d97706' : '#64748b';
+    const choicesArr = c.choices || ['YES','NO'];
+    window._cardMap = window._cardMap || {};
+    window._cardMap[c.id] = {id:c.id,title:c.title,category:c.category,description:c.description||'',image_url:c.image_url||'',event_start_at:c.event_start_at||'',closes_at:c.closes_at||'',result_announce_at:c.result_announce_at||'',card_type:c.card_type||'yesno',choices:choicesArr,target_age_groups:c.target_age_groups||[]};
+
+    let actionBtns = '';
+    if (c.status === 'open') {
+      actionBtns = `<button class="btn-edit" onclick="startEdit(window._cardMap['${c.id}'])">수정</button>
+        <button style="color:#d97706;border-color:#fcd34d" onclick="closeCard('${c.id}')">마감</button>
+        <button onclick="deleteCard('${c.id}')">삭제</button>`;
+    } else if (c.status === 'closed') {
+      const opts = choicesArr.map(ch => `<option value="${esc(ch)}">${esc(ch)}</option>`).join('');
+      actionBtns = `<select id="settle-${c.id}" style="padding:4px 8px;border:1px solid #e2e8f0;border-radius:6px;font-size:12px">
+        ${opts}<option value="VOID">VOID (무효)</option></select>
+        <button style="color:#fff;background:#4f46e5;border:none;padding:6px 12px;border-radius:6px;font-size:12px;cursor:pointer" onclick="settleCard('${c.id}')">정산</button>`;
+    } else {
+      actionBtns = `<span style="font-size:12px;color:#64748b">결과: <strong style="color:#4f46e5">${esc(c.final_result||'-')}</strong></span>`;
+    }
+
+    return `<div class="card-item">
+      ${thumb}
+      <span class="cat cat-${c.category}">${c.category}</span>
+      <div class="info">
+        <div class="title">${esc(c.title)} <span style="font-size:11px;color:#94a3b8;font-weight:400">[${typeLabel}]</span> <span style="font-size:10px;color:${statusColor};font-weight:600">${statusLabel}</span></div>
+        <div class="meta">시작: ${fmt(c.event_start_at)} · 마감: ${fmt(c.closes_at)} · ${votes}명 참여</div>
+      </div>
+      <div class="actions">
+        ${actionBtns}
+      </div>
+    </div>`;
+  }).join('');
+
+  // 페이지네이션
+  if (totalPages <= 1) { pgEl.innerHTML = ''; return; }
+  let pgHtml = `<button onclick="goPage(${currentPage-1}, filteredRef)" style="padding:4px 10px;border:1px solid #e2e8f0;border-radius:6px;font-size:12px;cursor:pointer;background:#fff" ${currentPage<=1?'disabled style="opacity:.3;cursor:not-allowed"':''}>◀</button>`;
+  pgHtml += `<span style="font-size:13px;color:#64748b">${currentPage} / ${totalPages}</span>`;
+  pgHtml += `<button onclick="goPage(${currentPage+1}, filteredRef)" style="padding:4px 10px;border:1px solid #e2e8f0;border-radius:6px;font-size:12px;cursor:pointer;background:#fff" ${currentPage>=totalPages?'disabled style="opacity:.3;cursor:not-allowed"':''}>▶</button>`;
+  pgEl.innerHTML = pgHtml;
+
+  window._filteredCards = cards;
+}
+
+function goPage(page) {
+  const cards = window._filteredCards || [];
+  const totalPages = Math.max(1, Math.ceil(cards.length / PAGE_SIZE));
+  if (page < 1 || page > totalPages) return;
+  currentPage = page;
+  renderCards(cards);
+}
+
+let pendingFile = null;
+let editingCardId = null;
+
+function submitCard() {
+  if (editingCardId) { updateCard(); } else { createCard(); }
+}
+
+function startEdit(card) {
+  editingCardId = card.id;
+  document.getElementById('formTitle').textContent = '카드 수정';
+  document.getElementById('fTitle').value = card.title;
+  document.getElementById('fCategory').value = card.category;
+  document.getElementById('fDesc').value = card.description || '';
+  document.getElementById('btnCreate').textContent = '수정 완료';
+  document.getElementById('btnCancel').classList.remove('hidden');
+
+  document.getElementById('fCardType').value = card.card_type || 'yesno';
+  toggleChoicesUI();
+  if (card.card_type === 'multichoice' && card.choices) {
+    document.getElementById('choicesList').innerHTML = '';
+    card.choices.forEach(ch => {
+      addChoiceInput();
+      const inputs = document.querySelectorAll('#choicesList .choice-input');
+      inputs[inputs.length - 1].value = ch;
+    });
+  }
+
+  if (card.event_start_at) {
+    document.getElementById('fStartAt').value = toDateInput(new Date(card.event_start_at));
+  }
+  if (card.closes_at) {
+    document.getElementById('fClosesAt').value = toDateInput(new Date(card.closes_at));
+  }
+  if (card.result_announce_at) {
+    document.getElementById('fResultAt').value = toDateInput(new Date(card.result_announce_at));
+  } else {
+    document.getElementById('fResultAt').value = '';
+  }
+
+  pendingFile = null;
+  document.getElementById('fImage').value = '';
+  if (card.image_url) {
+    document.getElementById('fImageUrl').value = card.image_url;
+    document.getElementById('previewImg').src = card.image_url;
+    document.getElementById('uploadPlaceholder').classList.add('hidden');
+    document.getElementById('uploadPreview').classList.remove('hidden');
+  } else {
+    document.getElementById('fImageUrl').value = '';
+    document.getElementById('previewImg').src = '';
+    document.getElementById('uploadPreview').classList.add('hidden');
+    document.getElementById('uploadPlaceholder').classList.remove('hidden');
+  }
+
+  setAgeGroupCheckboxes(card.target_age_groups || []);
+  document.querySelector('.form-card').scrollIntoView({behavior:'smooth'});
+}
+
+function cancelEdit() {
+  editingCardId = null;
+  document.getElementById('formTitle').textContent = '새 예측 카드 등록';
+  document.getElementById('fTitle').value = '';
+  document.getElementById('fDesc').value = '';
+  document.getElementById('fCategory').selectedIndex = 0;
+  document.getElementById('fCardType').value = 'yesno';
+  document.getElementById('choicesRow').classList.add('hidden');
+  document.getElementById('choicesList').innerHTML = '';
+  setDefaultDates();
+  document.getElementById('fResultAt').value = '';
+  setAgeGroupCheckboxes([]);
+  document.getElementById('btnCreate').textContent = '카드 등록';
+  document.getElementById('btnCancel').classList.add('hidden');
+  removeImage(new Event('click'));
+}
+
+async function updateCard() {
+  const title = document.getElementById('fTitle').value.trim();
+  if (!title) { toast('예측 질문을 입력하세요','error'); return; }
+
+  const btn = document.getElementById('btnCreate');
+  btn.disabled = true;
+  btn.textContent = '수정 중...';
+
+  try {
+    let imageUrl = undefined;
+    let clearImage = false;
+
+    if (pendingFile) {
+      imageUrl = await uploadImage();
+    } else if (!document.getElementById('fImageUrl').value && !document.getElementById('previewImg').src) {
+      clearImage = true;
+    }
+
+    const startAt = document.getElementById('fStartAt').value;
+    const closesAt = document.getElementById('fClosesAt').value;
+
+    const cardType = document.getElementById('fCardType').value;
+    const choices = getChoices();
+    if (cardType === 'multichoice' && (!choices || choices.length < 2)) {
+      toast('객관식은 최소 2개 선택지가 필요합니다','error');
+      btn.disabled = false; btn.textContent = '수정 완료'; return;
+    }
+
+    const body = {
+      title,
+      category: document.getElementById('fCategory').value,
+      description: document.getElementById('fDesc').value.trim() || null,
+      event_start_at: startAt ? new Date(startAt + 'T00:00:00').toISOString() : undefined,
+      closes_at: closesAt ? new Date(new Date(closesAt + 'T00:00:00').getTime() + 24*60*60*1000).toISOString() : undefined,
+      result_announce_at: document.getElementById('fResultAt').value ? new Date(document.getElementById('fResultAt').value + 'T00:00:00').toISOString() : undefined,
+      card_type: cardType,
+      choices: choices,
+      target_age_groups: getSelectedAgeGroups(),
+    };
+    if (imageUrl) body.image_url = imageUrl;
+    if (clearImage) body.clear_image = true;
+
+    const res = await authFetch(API+'/api/v1/admin/cards/'+editingCardId, {
+      method:'PATCH',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(body)
+    });
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error?.message || '수정 실패');
+    }
+    toast('카드가 수정되었습니다!','success');
+    cancelEdit();
+    await Promise.all([loadStats(), loadCards()]);
+  } catch(e) {
+    toast(e.message,'error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = editingCardId ? '수정 완료' : '카드 등록';
+  }
+}
+
+function onFileSelect(e) {
+  e.stopPropagation();
+  const file = e.target.files[0];
+  if (!file) return;
+  if (file.size > 5*1024*1024) { toast('파일 크기는 5MB 이하여야 합니다','error'); return; }
+  pendingFile = file;
+  const reader = new FileReader();
+  reader.onload = function(ev) {
+    document.getElementById('previewImg').src = ev.target.result;
+    document.getElementById('uploadPlaceholder').classList.add('hidden');
+    document.getElementById('uploadPreview').classList.remove('hidden');
+  };
+  reader.readAsDataURL(file);
+}
+
+function removeImage(e) {
+  e.stopPropagation();
+  pendingFile = null;
+  document.getElementById('fImage').value = '';
+  document.getElementById('fImageUrl').value = '';
+  document.getElementById('previewImg').src = '';
+  document.getElementById('uploadPreview').classList.add('hidden');
+  document.getElementById('uploadPlaceholder').classList.remove('hidden');
+}
+
+async function uploadImage() {
+  if (!pendingFile) return null;
+  const form = new FormData();
+  form.append('file', pendingFile);
+  const res = await authFetch(API+'/api/v1/admin/upload', {
+    method:'POST',
+    body: form
+  });
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(err.error?.message || '이미지 업로드 실패');
+  }
+  const data = await res.json();
+  return data.image_url;
+}
+
+async function createCard() {
+  const title = document.getElementById('fTitle').value.trim();
+  const startAt = document.getElementById('fStartAt').value;
+  const closesAt = document.getElementById('fClosesAt').value;
+  if (!title) { toast('예측 질문을 입력하세요','error'); return; }
+  if (!startAt || !closesAt) { toast('시작일자와 마감일자를 입력하세요','error'); return; }
+  if (new Date(closesAt) <= new Date(startAt)) { toast('마감일자는 시작일자 이후여야 합니다','error'); return; }
+
+  const btn = document.getElementById('btnCreate');
+  btn.disabled = true;
+  btn.textContent = '등록 중...';
+
+  try {
+    let imageUrl = null;
+    if (pendingFile) {
+      imageUrl = await uploadImage();
+    }
+
+    const cardType = document.getElementById('fCardType').value;
+    const choices = getChoices();
+    if (cardType === 'multichoice' && (!choices || choices.length < 2)) {
+      toast('객관식은 최소 2개 선택지가 필요합니다','error');
+      btn.disabled = false; btn.textContent = '카드 등록'; return;
+    }
+
+    const body = {
+      title,
+      category: document.getElementById('fCategory').value,
+      description: document.getElementById('fDesc').value.trim() || null,
+      event_start_at: new Date(startAt + 'T00:00:00').toISOString(),
+      closes_at: new Date(new Date(closesAt + 'T00:00:00').getTime() + 24*60*60*1000).toISOString(),
+      result_announce_at: document.getElementById('fResultAt').value ? new Date(document.getElementById('fResultAt').value + 'T00:00:00').toISOString() : null,
+      image_url: imageUrl,
+      card_type: cardType,
+      choices: choices,
+      target_age_groups: getSelectedAgeGroups(),
+    };
+    console.log('[카드 등록] 전송 데이터:', JSON.stringify(body, null, 2));
+    const res = await authFetch(API+'/api/v1/admin/cards', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(body)
+    });
+    const resData = await res.json();
+    console.log('[카드 등록] 응답:', res.status, JSON.stringify(resData, null, 2));
+    if (!res.ok) {
+      throw new Error(resData.error?.message || '등록 실패');
+    }
+    document.getElementById('fTitle').value = '';
+    document.getElementById('fDesc').value = '';
+    document.getElementById('fCardType').value = 'yesno';
+    document.getElementById('choicesRow').classList.add('hidden');
+    document.getElementById('choicesList').innerHTML = '';
+    setDefaultDates();
+    removeImage(new Event('click'));
+    toast('카드가 등록되었습니다!','success');
+    await Promise.all([loadStats(), loadCards()]);
+  } catch(e) {
+    console.error('[카드 등록] 에러:', e);
+    toast(e.message,'error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '카드 등록';
+  }
+}
+
+
+async function closeCard(id) {
+  if (!confirm('이 카드를 마감하시겠습니까? 마감 후 투표가 차단됩니다.')) return;
+  try {
+    const res = await authFetch(API+'/api/v1/admin/cards/'+id+'/close', {
+      method:'POST',
+    });
+    if (!res.ok) { const err = await res.json(); throw new Error(err.error?.message || '마감 실패'); }
+    toast('카드가 마감되었습니다','success');
+    await Promise.all([loadStats(), loadCards()]);
+  } catch(e) {
+    toast(e.message,'error');
+  }
+}
+
+async function settleCard(id) {
+  const sel = document.getElementById('settle-'+id);
+  if (!sel) return;
+  const result = sel.value;
+  if (!confirm(`정답을 "${result}"(으)로 정산하시겠습니까? 정산 후 되돌릴 수 없습니다.`)) return;
+  try {
+    const res = await authFetch(API+'/api/v1/admin/cards/'+id+'/settle', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({result})
+    });
+    if (!res.ok) { const err = await res.json(); throw new Error(err.error?.message || '정산 실패'); }
+    const data = await res.json();
+    toast(`정산 완료! ${data.settled_votes}명 정산됨`,'success');
+    await Promise.all([loadStats(), loadCards()]);
+  } catch(e) {
+    toast(e.message,'error');
+  }
+}
+
+async function deleteCard(id) {
+  if (!confirm('이 카드를 삭제하시겠습니까?')) return;
+  try {
+    const res = await authFetch(API+'/api/v1/admin/cards/'+id, {
+      method:'DELETE',
+    });
+    if (!res.ok) throw new Error('삭제 실패');
+    toast('삭제되었습니다','success');
+    await Promise.all([loadStats(), loadCards()]);
+  } catch(e) {
+    toast(e.message,'error');
+  }
+}
+
+function toast(msg, type) {
+  const el = document.createElement('div');
+  el.className = 'toast ' + type;
+  el.textContent = msg;
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 3000);
+}
+
+function esc(s) {
+  const d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+function toggleChoicesUI() {
+  const type = document.getElementById('fCardType').value;
+  const row = document.getElementById('choicesRow');
+  if (type === 'multichoice') {
+    row.classList.remove('hidden');
+    const list = document.getElementById('choicesList');
+    if (list.children.length === 0) { addChoiceInput(); addChoiceInput(); }
+  } else {
+    row.classList.add('hidden');
+  }
+}
+
+function addChoiceInput() {
+  const list = document.getElementById('choicesList');
+  const idx = list.children.length + 1;
+  const div = document.createElement('div');
+  div.style.cssText = 'display:flex;gap:6px;margin-bottom:6px;align-items:center';
+  div.innerHTML = `<input type="text" class="choice-input" placeholder="선택지 ${idx}" maxlength="50" style="flex:1;padding:8px 12px;border:1px solid #e2e8f0;border-radius:6px;font-size:13px"><button type="button" onclick="this.parentElement.remove()" style="background:none;border:none;color:#dc2626;cursor:pointer;font-size:16px;padding:4px">✕</button>`;
+  list.appendChild(div);
+}
+
+function getChoices() {
+  const type = document.getElementById('fCardType').value;
+  if (type !== 'multichoice') return null;
+  const inputs = document.querySelectorAll('#choicesList .choice-input');
+  const choices = [];
+  inputs.forEach(inp => { const v = inp.value.trim(); if (v) choices.push(v); });
+  return choices;
+}
+
+function toggleAllAges(el) {
+  document.querySelectorAll('.age-chk').forEach(c => { c.checked = el.checked; });
+}
+
+function getSelectedAgeGroups() {
+  const chks = document.querySelectorAll('.age-chk:checked');
+  return Array.from(chks).map(c => c.value);
+}
+
+function setAgeGroupCheckboxes(ages) {
+  const allVals = ["10대","20대","30대","40대","50대","60대 이상"];
+  const isAll = allVals.every(v => ages.includes(v));
+  document.querySelector('.age-chk-all').checked = isAll;
+  document.querySelectorAll('.age-chk').forEach(c => { c.checked = ages.includes(c.value); });
+}
+
+document.querySelectorAll('.age-chk').forEach(c => {
+  c.addEventListener('change', () => {
+    const allVals = ["10대","20대","30대","40대","50대","60대 이상"];
+    const allChecked = allVals.every(v => document.querySelector(`.age-chk[value="${v}"]`).checked);
+    document.querySelector('.age-chk-all').checked = allChecked;
+  });
+});
+</script>
+</body>
+</html>

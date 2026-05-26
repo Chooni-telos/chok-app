@@ -1,0 +1,23 @@
+# 환경/시크릿
+.env
+*.env
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+*.db
+
+# Node / Next.js
+node_modules/
+.next/
+out/
+npm-debug.log*
+
+# OS / 에디터
+.DS_Store
+.idea/
+.vscode/

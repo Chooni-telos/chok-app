@@ -1,0 +1,20 @@
+services:
+  db:
+    image: postgres:16
+    container_name: jakdoo-db
+    environment:
+      POSTGRES_USER: jakdoo
+      POSTGRES_PASSWORD: jakdoo
+      POSTGRES_DB: jakdoo
+    ports:
+      - "5432:5432"
+    volumes:
+      - jakdoo_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U jakdoo"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  jakdoo_pgdata:

@@ -61,6 +61,18 @@ def health_check():
     return {"status": "ok"}
 
 
+@app.get("/health/db")
+def health_check_db():
+    try:
+        from app.core.database import engine
+        from sqlalchemy import text
+        with engine.connect() as conn:
+            conn.execute(text("SELECT 1"))
+        return {"status": "ok", "db": "connected"}
+    except Exception as e:
+        return {"status": "error", "db": str(e), "url_prefix": os.environ.get("DATABASE_URL", "NOT_SET")[:50]}
+
+
 # AWS Lambda 핸들러
 try:
     from mangum import Mangum
